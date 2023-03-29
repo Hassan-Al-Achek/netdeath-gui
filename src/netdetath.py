@@ -1,3 +1,4 @@
+import json
 import sys
 import ctypes
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QCheckBox, QTextEdit,
@@ -5,7 +6,10 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QLineEd
                              QGroupBox, QFrame, QSplitter, QScrollBar)
 from PyQt6.QtCore import Qt, QDate, QSize, QFile, QTextStream, QDir
 from PyQt6.QtGui import QFont, QAction, QIcon
-import breeze_resources
+
+from src.gui import breeze_resources
+
+from src.net.scan.scan import Scan
 
 
 class ConsoleTab(QWidget):
@@ -57,7 +61,8 @@ class ConsoleTab(QWidget):
         commands = [
             "help",
             "banner",
-            "scan",
+            "shortcut",
+            "scan <target_address>",
             "setTargets",
             "setDomains",
             "arper",
@@ -68,6 +73,7 @@ class ConsoleTab(QWidget):
         descriptions = [
             "Display Help Menu",
             "I Like Banners",
+            "Create LNK file for malware first stage delivery",
             "Scan For Alive Devices",
             "Set Targets IPs",
             "Set Domains To Be Spoofed",
@@ -85,9 +91,14 @@ class ConsoleTab(QWidget):
         elif self.getLineText() == "help":
             self.setOutText("[+] Help\n" + listOfCommands["Command"])
         elif self.getLineText() == "whoami":
-            self.setOutText(200 * "[+] NetDeath V0.1\n")
+            self.setOutText("[+] NetDeath V0.1\n")
         elif self.getLineText() == "clear":
             self.setOutText("")
+        elif "scan" in self.getLineText():
+            scan_result = scan(self.getLineText().split()[1])
+            self.clearLineText()
+            tree_text = print_table(scan_result)
+            self.setOutText(tree_text)
 
         self.clearLineText()
 
@@ -251,8 +262,38 @@ class MainWindow(QMainWindow):
         self.tab_bar.removeTab(index)
 
 
-def scan():
+def print_table(data):
+    header = ["IP Address", "Port Number", "Protocol", "Service", "Status"]
+    rows = []
+
+    for ip, details in data.items():
+        if 'ports' in details:
+            for port in details['ports']:
+                if port['state'] == 'open':
+                    row = [
+                        ip,
+                        port['portid'],
+                        port['protocol'],
+                        port['service']['name'],
+                        port['state']
+                    ]
+                    rows.append(row)
+
+    table_str = " | ".join(header) + "\n"
+    table_str += "-" * (len(table_str) - 1) + "\n"
+
+    for row in rows:
+        table_str += " | ".join(row) + "\n"
+
+    return table_str
+
+
+
+def scan(target):
+    # Define The Scanner
     print("[+] Scanning Started")
+    scanner = Scan(target=target)
+    return scanner.scan_top_ports()
 
 
 def attack():
@@ -283,7 +324,7 @@ if __name__ == '__main__':
     # Setup TaskBar Icon
     appID = 'netdeath'  # arbitrary string
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appID)
-    app.setWindowIcon(QIcon("images/ghost.png"))
+    app.setWindowIcon(QIcon("images/the-reaper.png"))
 
     window = MainWindow()
     sys.exit(app.exec())

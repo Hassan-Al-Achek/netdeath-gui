@@ -1,0 +1,4 @@
+PyQt6~=6.4.2
+nmap~=0.0.1
+setuptools~=65.5.1
+scapy~=2.5.0
